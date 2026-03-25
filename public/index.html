@@ -283,7 +283,7 @@ function addMessage(role, text) {
   div.className = 'msg msg-' + role;
 
   if (role === 'mawd') {
-    div.innerHTML = '<div class="msg-avatar">M</div><div class="msg-bubble">' + escapeHtml(text) + '</div>';
+    div.innerHTML = '<div class="msg-avatar">M</div><div class="msg-bubble">' + formatMawd(text) + '</div>';
   } else {
     div.innerHTML = '<div class="msg-bubble">' + escapeHtml(text) + '</div>';
   }
@@ -312,6 +312,15 @@ function escapeHtml(str) {
   var div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+function formatMawd(str) {
+  var safe = escapeHtml(str);
+  // Bold: **text**
+  safe = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Newlines to <br>
+  safe = safe.replace(/\n/g, '<br>');
+  return safe;
 }
 
 // Voice (Web Speech API)
