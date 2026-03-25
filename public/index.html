@@ -191,7 +191,7 @@ body{font-family:-apple-system,'SF Pro Text','Helvetica Neue',sans-serif;font-we
 
 <script>
 // State
-var history = [];
+var chatHistory = [];
 var isLoading = false;
 var recognition = null;
 var isRecording = false;
@@ -239,7 +239,7 @@ async function sendMessage() {
 
   // Add user message
   addMessage('user', text);
-  history.push({ role: 'user', content: text });
+  chatHistory.push({ role: 'user', content: text });
 
   // Clear input
   inputField.value = '';
@@ -254,7 +254,7 @@ async function sendMessage() {
     var res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, history: history.slice(0, -1) })
+      body: JSON.stringify({ message: text, history: chatHistory.slice(0, -1) })
     });
 
     var data = await res.json();
@@ -264,7 +264,7 @@ async function sendMessage() {
 
     if (data.reply) {
       addMessage('mawd', data.reply);
-      history.push({ role: 'assistant', content: data.reply });
+      chatHistory.push({ role: 'assistant', content: data.reply });
     } else {
       addMessage('mawd', 'Something went wrong. Try again.');
     }
