@@ -1,0 +1,19 @@
+{
+  "buildCommand": "exit 0",
+  "outputDirectory": "public",
+  "framework": null,
+  "installCommand": "exit 0",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/morning",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/nudge",
+      "schedule": "0 23 * * *"
+    }
+  ]
+}
