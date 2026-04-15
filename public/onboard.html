@@ -96,6 +96,32 @@ const SOURCES = [
   {id:'csv',t:'Upload CSV'},
 ];
 
+// ─── Stable user id (generated once, persisted to server) ────────
+function ensureUserId(){
+  let id = localStorage.getItem('mawd_user_id');
+  if (!id) {
+    id = (self.crypto && self.crypto.randomUUID)
+      ? self.crypto.randomUUID()
+      : ('u_' + Date.now() + '_' + Math.random().toString(36).slice(2,10));
+    localStorage.setItem('mawd_user_id', id);
+  }
+  return id;
+}
+
+// Fire-and-forget; onboarding still works if this fails.
+async function syncUser(partial){
+  const id = ensureUserId();
+  try {
+    await fetch('/api/user/upsert', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id, ...(partial || {}) }),
+    });
+  } catch(e) {
+    console.warn('user upsert failed', e && e.message);
+  }
+}
+
 function setDots(n){
   const dots = document.querySelectorAll('#dots span');
   dots.forEach((d,i)=>d.classList.toggle('active',i<=n));
@@ -104,6 +130,39 @@ function saveDraft(){ localStorage.setItem('mawd_profile_draft', JSON.stringify(
 function anyConnected(){
   return SOURCES.some(s => localStorage.getItem('connected_'+s.id)==='true');
 }
+
+// ─── Handle return from Google OAuth ──────────────────────────────
+// Runs before render(). If we see ?connected=gmail we drop the user
+// back on the sources step exactly where they left off — OR, if they
+// were already onboarded, patch their stored profile so v2 sees Gmail.
+let oauthNotice = null;
+(function handleOAuthReturn(){
+  const qs = new URLSearchParams(window.location.search);
+  if (qs.get('connected') === 'gmail') {
+    localStorage.setItem('connected_gmail', 'true');
+    const email = qs.get('email');
+    if (email) localStorage.setItem('connected_gmail_email', email);
+    // If the user already finished onboarding before, merge gmail into
+    // the saved profile so v2 can render it as connected.
+    try {
+      const saved = JSON.parse(localStorage.getItem('mawd_profile') || 'null');
+      if (saved) {
+        const connected = new Set(saved.connected || []);
+        connected.add('gmail');
+        saved.connected = Array.from(connected);
+        if (email) saved.email = email;
+        localStorage.setItem('mawd_profile', JSON.stringify(saved));
+      }
+    } catch(e){}
+    oauthNotice = { kind:'ok', msg: email ? ('Connected as ' + email) : 'Gmail connected.' };
+    step = 3;
+    history.replaceState({}, '', '/onboard.html');
+  } else if (qs.get('oauth_error')) {
+    oauthNotice = { kind:'err', msg: qs.get('oauth_error') };
+    step = 3;
+    history.replaceState({}, '', '/onboard.html');
+  }
+})();
 
 function render(){
   setDots(step);
@@ -127,8 +186,9 @@ function render(){
       next.disabled = !profile.name;
       saveDraft();
     });
-    input.addEventListener('keydown', e => { if (e.key==='Enter' && profile.name){ step++; render(); }});
-    next.onclick = () => { step++; render(); };
+    const advance = () => { syncUser({ name: profile.name }); step++; render(); };
+    input.addEventListener('keydown', e => { if (e.key==='Enter' && profile.name){ advance(); }});
+    next.onclick = advance;
   }
   else if (step === 1) {
     c.innerHTML = `
@@ -152,7 +212,7 @@ function render(){
       };
     });
     document.getElementById('back').onclick = () => { step--; render(); };
-    document.getElementById('next').onclick = () => { step++; render(); };
+    document.getElementById('next').onclick = () => { syncUser({ talent_type: profile.talent_type }); step++; render(); };
   }
   else if (step === 2) {
     c.innerHTML = `
@@ -172,17 +232,25 @@ function render(){
       saveDraft();
     });
     document.getElementById('back').onclick = () => { step--; render(); };
-    document.getElementById('next').onclick = () => { step++; render(); };
+    document.getElementById('next').onclick = () => { syncUser({ primary_goal: profile.primary_goal }); step++; render(); };
   }
   else if (step === 3) {
+    const noticeHtml = oauthNotice
+      ? `<div class="hint" style="color:${oauthNotice.kind==='err'?'#ff9a9a':'var(--gold)'};margin-bottom:14px;text-align:left">${oauthNotice.msg}</div>`
+      : '';
+
     c.innerHTML = `
       <h1>Connect a data source.</h1>
       <p class="sub">At least one, so MAWD has something to work with. You can add more later.</p>
+      ${noticeHtml}
       <div class="sources" id="sources">
         ${SOURCES.map(s=>{
           const connected = localStorage.getItem('connected_'+s.id)==='true';
+          const emailTag = (s.id==='gmail' && connected && localStorage.getItem('connected_gmail_email'))
+            ? `<div class="d" style="font-size:11.5px;color:var(--muted);margin-top:2px">${localStorage.getItem('connected_gmail_email')}</div>`
+            : '';
           return `<div class="src" data-id="${s.id}">
-            <div class="l"><div class="ic">${s.t[0]}</div><div class="nm">${s.t}</div></div>
+            <div class="l"><div class="ic">${s.t[0]}</div><div><div class="nm">${s.t}</div>${emailTag}</div></div>
             <button class="btn ${connected?'connected':''}" data-id="${s.id}">${connected?'Connected':'Connect'}</button>
           </div>`;
         }).join('')}
@@ -193,10 +261,28 @@ function render(){
         <button class="primary" id="next" ${anyConnected()?'':'disabled'}>Finish</button>
       </div>
     `;
+    oauthNotice = null; // one-shot
+
     document.querySelectorAll('#sources .btn').forEach(b=>{
       b.onclick = async () => {
         if (b.classList.contains('connected')) return;
         const id = b.dataset.id;
+
+        // Gmail = real Google OAuth. Persist draft + user_id and redirect.
+        if (id === 'gmail') {
+          b.innerHTML = '<span class="spinner"></span>';
+          b.disabled = true;
+          saveDraft();
+          const userId = ensureUserId();
+          // Make sure the server knows about this user before we store tokens
+          // against its id. await briefly; fall through if it fails so we
+          // don't strand the user.
+          try { await syncUser({ name: profile.name, talent_type: profile.talent_type, primary_goal: profile.primary_goal }); } catch(e){}
+          window.location.href = '/api/auth/google/start?user_id=' + encodeURIComponent(userId);
+          return;
+        }
+
+        // Everything else is still a simulated connection (Layer 1 scope).
         b.innerHTML = '<span class="spinner"></span>';
         b.disabled = true;
         await new Promise(r=>setTimeout(r, 850 + Math.random()*500));
@@ -227,8 +313,16 @@ function render(){
 function finish(){
   profile.connected = SOURCES.filter(s=>localStorage.getItem('connected_'+s.id)==='true').map(s=>s.id);
   profile.created_at = new Date().toISOString();
+  profile.user_id = ensureUserId();
   localStorage.setItem('mawd_profile', JSON.stringify(profile));
   localStorage.removeItem('mawd_profile_draft');
+  // Persist the final profile to the server, but don't block the UI on it.
+  syncUser({
+    name: profile.name,
+    talent_type: profile.talent_type,
+    primary_goal: profile.primary_goal,
+    email: localStorage.getItem('connected_gmail_email') || undefined,
+  });
   step = 4;
   render();
 }
