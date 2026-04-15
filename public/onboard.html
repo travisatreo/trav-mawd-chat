@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>MAWD · Onboarding</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#07070F;
+    --cream:#F5F1EA;
+    --gold:#C4953A;
+    --gold-2:#E8B84B;
+    --muted:rgba(245,241,234,0.6);
+    --border:rgba(245,241,234,0.08);
+    --surface:rgba(245,241,234,0.03);
+    --surface-2:rgba(245,241,234,0.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--cream);font-family:'DM Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;height:100%}
+  body{display:flex;align-items:center;justify-content:center;padding:24px;min-height:100vh;min-height:100dvh}
+  .wrap{width:100%;max-width:560px}
+  .brand{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:40px}
+  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--gold)}
+  .brand .name{font-family:'Playfair Display',serif;font-size:20px;letter-spacing:0.02em}
+  .dots{display:flex;gap:8px;justify-content:center;margin-bottom:32px}
+  .dots span{width:6px;height:6px;border-radius:50%;background:var(--border);transition:all .25s ease}
+  .dots span.active{background:var(--gold);width:24px;border-radius:999px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:36px}
+  h1{font-family:'Playfair Display',serif;font-weight:500;font-size:30px;line-height:1.15;margin:0 0 10px;letter-spacing:-0.01em}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 28px;line-height:1.5}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:10px;letter-spacing:0.02em}
+  input[type=text],textarea{width:100%;background:transparent;color:var(--cream);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font:inherit;font-size:16px;outline:none;transition:border-color .2s}
+  input[type=text]:focus,textarea:focus{border-color:var(--gold)}
+  textarea{resize:none;min-height:88px;font-family:inherit}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:520px){.grid{grid-template-columns:1fr}}
+  .tile{border:1px solid var(--border);border-radius:12px;padding:18px 16px;cursor:pointer;transition:all .2s;background:transparent}
+  .tile:hover{border-color:rgba(245,241,234,0.2)}
+  .tile.selected{border-color:var(--gold);background:rgba(196,149,58,0.06)}
+  .tile .t{font-size:15px;font-weight:500}
+  .tile .d{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .sources{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:520px){.sources{grid-template-columns:1fr}}
+  .src{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .src .l{display:flex;align-items:center;gap:10px;min-width:0}
+  .src .ic{width:24px;height:24px;border-radius:6px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--gold);flex:0 0 auto;font-weight:600}
+  .src .nm{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .btn{appearance:none;border:1px solid var(--border);background:transparent;color:var(--cream);border-radius:999px;padding:7px 12px;font:inherit;font-size:12.5px;cursor:pointer;transition:all .2s}
+  .btn:hover{border-color:var(--gold);color:var(--gold)}
+  .btn.connected{border-color:rgba(196,149,58,0.4);color:var(--gold);background:rgba(196,149,58,0.06)}
+  .btn[disabled]{opacity:.6;cursor:default}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--gold)}
+  .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--gold)}
+  .actions{display:flex;justify-content:space-between;align-items:center;margin-top:28px;gap:12px}
+  .primary{appearance:none;border:0;background:var(--gold);color:#0b0b14;border-radius:999px;padding:13px 24px;font:inherit;font-weight:600;font-size:14.5px;cursor:pointer;letter-spacing:0.01em;transition:background .2s}
+  .primary:hover{background:var(--gold-2)}
+  .primary[disabled]{opacity:.4;cursor:not-allowed}
+  .ghost{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-size:14px;cursor:pointer;padding:10px 4px}
+  .ghost:hover{color:var(--cream)}
+  .final{text-align:center;padding:48px 24px}
+  .final .tick{width:44px;height:44px;border-radius:50%;border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;color:var(--gold);font-size:20px}
+  .spinner{width:12px;height:12px;border:1.5px solid rgba(245,241,234,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .hint{color:var(--muted);font-size:12.5px;margin-top:14px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><span class="dot"></span><span class="name">MAWD</span></div>
+  <div class="dots" id="dots">
+    <span class="active"></span><span></span><span></span><span></span>
+  </div>
+  <div class="card" id="card"></div>
+</div>
+
+<script>
+const profile = JSON.parse(localStorage.getItem('mawd_profile_draft') || '{}');
+let step = 0;
+
+const TALENTS = [
+  {id:'artist',t:'Artist',d:'Musician, band, producer'},
+  {id:'actor',t:'Actor',d:'Film, TV, theater'},
+  {id:'athlete',t:'Athlete',d:'Pro, Olympic, NIL'},
+  {id:'creator',t:'Creator',d:'YouTube, TikTok, Twitch'},
+  {id:'director',t:'Director',d:'Film, video, commercial'},
+];
+const SOURCES = [
+  {id:'gmail',t:'Gmail'},
+  {id:'spotify',t:'Spotify for Artists'},
+  {id:'youtube',t:'YouTube Studio'},
+  {id:'stripe',t:'Stripe'},
+  {id:'plaid',t:'Bank via Plaid'},
+  {id:'csv',t:'Upload CSV'},
+];
+
+function setDots(n){
+  const dots = document.querySelectorAll('#dots span');
+  dots.forEach((d,i)=>d.classList.toggle('active',i<=n));
+}
+function saveDraft(){ localStorage.setItem('mawd_profile_draft', JSON.stringify(profile)); }
+function anyConnected(){
+  return SOURCES.some(s => localStorage.getItem('connected_'+s.id)==='true');
+}
+
+function render(){
+  setDots(step);
+  const c = document.getElementById('card');
+  if (step === 0) {
+    c.innerHTML = `
+      <h1>Let's set up MAWD.</h1>
+      <p class="sub">Four quick steps. About a minute.</p>
+      <label>What should MAWD call you?</label>
+      <input id="name" type="text" placeholder="First name" value="${profile.name||''}" autocomplete="given-name" />
+      <div class="actions">
+        <span></span>
+        <button class="primary" id="next" ${profile.name?'':'disabled'}>Continue</button>
+      </div>
+    `;
+    const input = document.getElementById('name');
+    const next = document.getElementById('next');
+    input.focus();
+    input.addEventListener('input', e => {
+      profile.name = e.target.value.trim();
+      next.disabled = !profile.name;
+      saveDraft();
+    });
+    input.addEventListener('keydown', e => { if (e.key==='Enter' && profile.name){ step++; render(); }});
+    next.onclick = () => { step++; render(); };
+  }
+  else if (step === 1) {
+    c.innerHTML = `
+      <h1>What do you do?</h1>
+      <p class="sub">Pick the one that fits best. You can refine later.</p>
+      <div class="grid" id="tiles">
+        ${TALENTS.map(t=>`<div class="tile ${profile.talent_type===t.id?'selected':''}" data-id="${t.id}"><div class="t">${t.t}</div><div class="d">${t.d}</div></div>`).join('')}
+      </div>
+      <div class="actions">
+        <button class="ghost" id="back">Back</button>
+        <button class="primary" id="next" ${profile.talent_type?'':'disabled'}>Continue</button>
+      </div>
+    `;
+    document.querySelectorAll('#tiles .tile').forEach(t=>{
+      t.onclick = () => {
+        profile.talent_type = t.dataset.id;
+        saveDraft();
+        document.querySelectorAll('#tiles .tile').forEach(x=>x.classList.remove('selected'));
+        t.classList.add('selected');
+        document.getElementById('next').disabled = false;
+      };
+    });
+    document.getElementById('back').onclick = () => { step--; render(); };
+    document.getElementById('next').onclick = () => { step++; render(); };
+  }
+  else if (step === 2) {
+    c.innerHTML = `
+      <h1>What should MAWD handle first?</h1>
+      <p class="sub">One sentence. The thing that's on your plate right now.</p>
+      <textarea id="goal" placeholder="What do you want MAWD to handle first?">${profile.primary_goal||''}</textarea>
+      <div class="actions">
+        <button class="ghost" id="back">Back</button>
+        <button class="primary" id="next" ${(profile.primary_goal||'').trim()?'':'disabled'}>Continue</button>
+      </div>
+    `;
+    const ta = document.getElementById('goal');
+    ta.focus();
+    ta.addEventListener('input', e => {
+      profile.primary_goal = e.target.value;
+      document.getElementById('next').disabled = !e.target.value.trim();
+      saveDraft();
+    });
+    document.getElementById('back').onclick = () => { step--; render(); };
+    document.getElementById('next').onclick = () => { step++; render(); };
+  }
+  else if (step === 3) {
+    c.innerHTML = `
+      <h1>Connect a data source.</h1>
+      <p class="sub">At least one, so MAWD has something to work with. You can add more later.</p>
+      <div class="sources" id="sources">
+        ${SOURCES.map(s=>{
+          const connected = localStorage.getItem('connected_'+s.id)==='true';
+          return `<div class="src" data-id="${s.id}">
+            <div class="l"><div class="ic">${s.t[0]}</div><div class="nm">${s.t}</div></div>
+            <button class="btn ${connected?'connected':''}" data-id="${s.id}">${connected?'Connected':'Connect'}</button>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="hint" id="hint">Pick at least one to continue.</div>
+      <div class="actions">
+        <button class="ghost" id="back">Back</button>
+        <button class="primary" id="next" ${anyConnected()?'':'disabled'}>Finish</button>
+      </div>
+    `;
+    document.querySelectorAll('#sources .btn').forEach(b=>{
+      b.onclick = async () => {
+        if (b.classList.contains('connected')) return;
+        const id = b.dataset.id;
+        b.innerHTML = '<span class="spinner"></span>';
+        b.disabled = true;
+        await new Promise(r=>setTimeout(r, 850 + Math.random()*500));
+        localStorage.setItem('connected_'+id,'true');
+        b.disabled = false;
+        b.classList.add('connected');
+        b.textContent = 'Connected';
+        document.getElementById('next').disabled = !anyConnected();
+        document.getElementById('hint').textContent = 'Looks good. One is enough.';
+      };
+    });
+    document.getElementById('back').onclick = () => { step--; render(); };
+    document.getElementById('next').onclick = () => finish();
+  }
+  else if (step === 4) {
+    c.innerHTML = `
+      <div class="final">
+        <div class="tick">&#10003;</div>
+        <h1 style="margin-bottom:6px">MAWD is ready.</h1>
+        <p class="sub" style="margin:0 0 22px">Opening your chief of staff.</p>
+        <div class="pill">Booting</div>
+      </div>
+    `;
+    setTimeout(()=>{ window.location.href = '/v2.html'; }, 900);
+  }
+}
+
+function finish(){
+  profile.connected = SOURCES.filter(s=>localStorage.getItem('connected_'+s.id)==='true').map(s=>s.id);
+  profile.created_at = new Date().toISOString();
+  localStorage.setItem('mawd_profile', JSON.stringify(profile));
+  localStorage.removeItem('mawd_profile_draft');
+  step = 4;
+  render();
+}
+
+// If already onboarded, send straight to v2
+if (localStorage.getItem('mawd_profile')) {
+  try {
+    const p = JSON.parse(localStorage.getItem('mawd_profile'));
+    if (p && p.name && p.talent_type) {
+      window.location.replace('/v2.html');
+    }
+  } catch(e){}
+}
+render();
+</script>
+</body>
+</html>

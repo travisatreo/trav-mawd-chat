@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>MAWD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root{
+    --bg:#07070F;
+    --cream:#F5F1EA;
+    --gold:#C4953A;
+    --gold-2:#E8B84B;
+    --muted:rgba(245,241,234,0.6);
+    --subtle:rgba(245,241,234,0.45);
+    --border:rgba(245,241,234,0.08);
+    --border-2:rgba(245,241,234,0.14);
+    --surface:rgba(245,241,234,0.03);
+    --surface-2:rgba(245,241,234,0.06);
+    --bubble:rgba(245,241,234,0.05);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--cream);font-family:'DM Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;height:100%;overflow:hidden}
+  button{font-family:inherit}
+
+  /* layout */
+  .app{display:grid;grid-template-columns:260px 1fr 300px;height:100dvh;min-height:100vh}
+  @media (max-width:1100px){.app{grid-template-columns:240px 1fr}.ctx{display:none}}
+  @media (max-width:780px){.app{grid-template-columns:1fr}}
+
+  /* left rail */
+  .rail{border-right:1px solid var(--border);display:flex;flex-direction:column;padding:18px 14px;gap:14px;min-height:0}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 6px 10px}
+  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--gold)}
+  .brand .nm{font-family:'Playfair Display',serif;font-size:18px;letter-spacing:0.02em}
+  .rail h3{font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:var(--subtle);margin:8px 8px 6px;font-weight:500}
+  .agent{display:flex;gap:10px;align-items:flex-start;padding:10px 10px;border-radius:10px;cursor:pointer;transition:background .15s;border-left:2px solid transparent;position:relative}
+  .agent:hover{background:var(--surface)}
+  .agent.active{background:var(--surface-2);border-left-color:var(--gold)}
+  .agent .cdot{width:7px;height:7px;border-radius:50%;margin-top:7px;flex:0 0 auto}
+  .agent .meta{min-width:0;flex:1}
+  .agent .nm{font-size:14px;font-weight:500;letter-spacing:0.01em}
+  .agent .desc{font-size:12px;color:var(--muted);line-height:1.35;margin-top:2px}
+  .agent.active .nm{color:var(--gold-2)}
+
+  .rail-foot{margin-top:auto;border-top:1px solid var(--border);padding:14px 6px 4px;display:flex;align-items:center;gap:10px}
+  .avatar{width:28px;height:28px;border-radius:50%;background:var(--surface-2);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+  .you .nm{font-size:13px}
+  .you .sub{font-size:11.5px;color:var(--muted)}
+
+  /* main column */
+  .main{display:flex;flex-direction:column;min-width:0;min-height:0}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:1px solid var(--border);gap:12px}
+  .topbar .l{display:flex;align-items:center;gap:12px;min-width:0}
+  .hamb{display:none;appearance:none;background:transparent;border:1px solid var(--border);color:var(--cream);width:34px;height:34px;border-radius:8px;cursor:pointer;align-items:center;justify-content:center;padding:0}
+  @media (max-width:780px){.hamb{display:flex}}
+  .hamb svg{width:16px;height:16px}
+  .active-tag{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+  .active-tag .d{width:6px;height:6px;border-radius:50%;background:var(--gold)}
+  .active-tag strong{color:var(--cream);font-weight:500;letter-spacing:0.02em}
+  .top-actions{display:flex;gap:8px}
+  .iconbtn{appearance:none;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:12.5px;cursor:pointer;transition:all .15s}
+  .iconbtn:hover{color:var(--cream);border-color:var(--border-2)}
+
+  .thread{flex:1;overflow-y:auto;padding:32px 22px 160px;scroll-behavior:smooth}
+  .thread-inner{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+  .empty{max-width:760px;margin:10vh auto 0;padding:0 8px}
+  .empty h1{font-family:'Playfair Display',serif;font-weight:500;font-size:36px;line-height:1.1;margin:0 0 10px;letter-spacing:-0.01em}
+  .empty p{color:var(--muted);font-size:15px;margin:0 0 26px}
+  .suggest{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:600px){.suggest{grid-template-columns:1fr}}
+  .sug{border:1px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;background:transparent;text-align:left;color:var(--cream);font:inherit;font-size:14px;line-height:1.4;transition:all .15s}
+  .sug:hover{border-color:var(--border-2);background:var(--surface)}
+  .sug .sug-k{font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;font-weight:500}
+
+  .msg{display:flex;flex-direction:column;max-width:92%}
+  .msg.user{align-self:flex-end;align-items:flex-end}
+  .msg.ai{align-self:flex-start;align-items:flex-start;max-width:100%}
+  .msg .who{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;font-weight:500;padding-left:2px}
+  .bubble{border-radius:12px;padding:14px 16px;line-height:1.55;font-size:15px;background:var(--bubble);color:var(--cream);border:1px solid transparent;word-wrap:break-word;overflow-wrap:anywhere}
+  .msg.user .bubble{background:rgba(245,241,234,0.08);border-color:var(--border)}
+  .msg.ai .bubble{background:transparent;padding:0;border-radius:0}
+  .bubble p{margin:0 0 10px}
+  .bubble p:last-child{margin-bottom:0}
+  .bubble ul,.bubble ol{margin:6px 0 10px;padding-left:20px}
+  .bubble li{margin:3px 0}
+  .bubble code{font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--surface-2);padding:2px 6px;border-radius:4px}
+  .bubble pre{font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--surface-2);padding:14px 16px;border-radius:8px;overflow-x:auto;margin:10px 0;border:1px solid var(--border)}
+  .bubble pre code{background:transparent;padding:0}
+  .bubble strong{font-weight:600;color:var(--cream)}
+  .bubble a{color:var(--gold-2);text-decoration:underline;text-underline-offset:3px}
+  .bubble h1,.bubble h2,.bubble h3{font-family:'Playfair Display',serif;font-weight:500;margin:14px 0 8px;letter-spacing:-0.005em}
+  .bubble h1{font-size:22px}
+  .bubble h2{font-size:18px}
+  .bubble h3{font-size:16px}
+  .bubble table{width:100%;border-collapse:collapse;margin:10px 0;font-size:14px}
+  .bubble th,.bubble td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+  .bubble th{color:var(--muted);font-weight:500;font-size:12px;text-transform:uppercase;letter-spacing:0.06em}
+  .caret{display:inline-block;width:7px;height:16px;background:var(--gold);margin-left:2px;animation:blink 1s infinite;vertical-align:-3px;border-radius:1px}
+  @keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+
+  /* composer */
+  .composer-wrap{position:absolute;left:0;right:0;bottom:0;padding:14px 22px calc(14px + env(safe-area-inset-bottom));pointer-events:none;background:linear-gradient(to bottom, transparent, var(--bg) 40%)}
+  @supports not (background: linear-gradient(#000,#000)){.composer-wrap{background:var(--bg)}}
+  .composer{pointer-events:auto;max-width:760px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:8px 8px 8px 14px;display:flex;align-items:flex-end;gap:8px;transition:border-color .15s}
+  .composer:focus-within{border-color:var(--border-2)}
+  .composer textarea{flex:1;background:transparent;border:0;outline:0;color:var(--cream);font:inherit;font-size:15px;line-height:1.5;resize:none;padding:10px 4px;max-height:200px;min-height:24px}
+  .send{appearance:none;border:0;background:var(--gold);color:#0b0b14;width:36px;height:36px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;flex:0 0 auto}
+  .send:hover{background:var(--gold-2)}
+  .send[disabled]{opacity:.4;cursor:not-allowed}
+  .send svg{width:16px;height:16px}
+
+  /* right rail / context */
+  .ctx{border-left:1px solid var(--border);padding:18px 18px;overflow-y:auto;min-height:0}
+  .ctx h3{font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:var(--subtle);margin:10px 0 8px;font-weight:500}
+  .ctx .kv{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+  .ctx .kv:last-child{border-bottom:0}
+  .ctx .k{color:var(--muted)}
+  .ctx .v{color:var(--cream);font-weight:500;max-width:60%;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ctx .src-row{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px}
+  .ctx .src-row .d{width:6px;height:6px;border-radius:50%;background:var(--gold)}
+  .ctx .action-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:13px;color:var(--muted);line-height:1.45}
+
+  /* mobile drawer */
+  .scrim{position:fixed;inset:0;background:rgba(7,7,15,0.6);z-index:50;opacity:0;pointer-events:none;transition:opacity .2s}
+  .scrim.open{opacity:1;pointer-events:auto}
+  @media (max-width:780px){
+    .rail{position:fixed;left:0;top:0;bottom:0;width:280px;background:var(--bg);z-index:60;transform:translateX(-100%);transition:transform .25s ease;border-right:1px solid var(--border)}
+    .rail.open{transform:translateX(0)}
+    .thread{padding:20px 16px 140px}
+    .composer-wrap{padding:10px 14px calc(10px + env(safe-area-inset-bottom))}
+    .empty h1{font-size:28px}
+    .topbar{padding:12px 14px}
+  }
+  .thread::-webkit-scrollbar,.rail::-webkit-scrollbar,.ctx::-webkit-scrollbar{width:8px}
+  .thread::-webkit-scrollbar-thumb,.rail::-webkit-scrollbar-thumb,.ctx::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+  .thread::-webkit-scrollbar-thumb:hover{background:var(--border-2)}
+
+  /* toast */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface-2);border:1px solid var(--border);color:var(--cream);padding:10px 16px;border-radius:999px;font-size:13px;z-index:80;opacity:0;transition:opacity .2s}
+  .toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="rail" id="rail">
+    <div class="brand"><span class="dot"></span><span class="nm">MAWD</span></div>
+
+    <div>
+      <h3>Chief of staff</h3>
+      <div class="agent" data-agent="" id="agent-default">
+        <span class="cdot" style="background:#E8B84B"></span>
+        <div class="meta">
+          <div class="nm">MAWD</div>
+          <div class="desc">Routes to the right agent for you.</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3>Agents</h3>
+      <div id="agents"></div>
+    </div>
+
+    <div class="rail-foot">
+      <div class="avatar" id="avatar">T</div>
+      <div class="you"><div class="nm" id="you-name">You</div><div class="sub" id="you-sub">Onboarded</div></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="l">
+        <button class="hamb" id="hamb" aria-label="Open menu"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h12M2 12h12"/></svg></button>
+        <span class="active-tag"><span class="d"></span><span>Active: <strong id="activeName">MAWD</strong></span></span>
+      </div>
+      <div class="top-actions">
+        <button class="iconbtn" id="newThread">New thread</button>
+      </div>
+    </div>
+
+    <div class="thread" id="thread">
+      <div class="thread-inner" id="threadInner"></div>
+    </div>
+
+    <div class="composer-wrap">
+      <form class="composer" id="composer" autocomplete="off">
+        <textarea id="input" rows="1" placeholder="Message MAWD" spellcheck="true"></textarea>
+        <button class="send" id="send" type="submit" aria-label="Send" disabled>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <aside class="ctx">
+    <h3>Active agent</h3>
+    <div class="kv"><span class="k">Name</span><span class="v" id="ctxName">MAWD</span></div>
+    <div class="kv"><span class="k">Mode</span><span class="v">Chief of staff</span></div>
+
+    <h3 style="margin-top:24px">Connected sources</h3>
+    <div id="ctxSources"></div>
+
+    <h3 style="margin-top:24px">Last action</h3>
+    <div class="action-box" id="ctxLast">Waiting for your first message.</div>
+  </aside>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Profile gate ───────────────────────────────────────────────
+const profile = (() => {
+  try { return JSON.parse(localStorage.getItem('mawd_profile') || 'null'); }
+  catch(e){ return null; }
+})();
+if (!profile || !profile.name || !profile.talent_type) {
+  window.location.replace('/onboard.html');
+}
+
+// ─── Agents ─────────────────────────────────────────────────────
+const AGENTS = [
+  {id:'dollar',   nm:'DOLLAR',  desc:'CFO. Money, taxes, P&L.',           color:'#E8B84B'},
+  {id:'pulse',    nm:'PULSE',   desc:'Fan intel and A&R signals.',        color:'#D3A64A'},
+  {id:'scout',    nm:'SCOUT',   desc:'Brand, sync, partnerships.',        color:'#C4953A'},
+  {id:'compass',  nm:'COMPASS', desc:'Strategy and release planning.',    color:'#B68433'},
+  {id:'hype',     nm:'HYPE',    desc:'Publicist. Press and announcement.',color:'#A8762D'},
+];
+
+let activeAgent = ''; // '' = default MAWD chief of staff
+let streaming = false;
+let lastAction = null;
+
+// Render agents
+const agentsEl = document.getElementById('agents');
+agentsEl.innerHTML = AGENTS.map(a => `
+  <div class="agent" data-agent="${a.id}">
+    <span class="cdot" style="background:${a.color}"></span>
+    <div class="meta">
+      <div class="nm">${a.nm}</div>
+      <div class="desc">${a.desc}</div>
+    </div>
+  </div>
+`).join('');
+
+document.querySelectorAll('.agent').forEach(el => {
+  el.addEventListener('click', () => selectAgent(el.dataset.agent || ''));
+});
+
+function selectAgent(id) {
+  activeAgent = id;
+  document.querySelectorAll('.agent').forEach(a => a.classList.remove('active'));
+  const sel = document.querySelector(`.agent[data-agent="${id}"]`) || document.getElementById('agent-default');
+  sel.classList.add('active');
+  const nm = id ? AGENTS.find(a=>a.id===id).nm : 'MAWD';
+  document.getElementById('activeName').textContent = nm;
+  document.getElementById('ctxName').textContent = nm;
+  closeDrawer();
+}
+selectAgent('');
+
+// ─── Sidebar user ───────────────────────────────────────────────
+document.getElementById('avatar').textContent = (profile.name || '?')[0].toUpperCase();
+document.getElementById('you-name').textContent = profile.name;
+document.getElementById('you-sub').textContent = capitalize(profile.talent_type || 'Member');
+
+function capitalize(s){ return (s||'').charAt(0).toUpperCase() + (s||'').slice(1); }
+
+// ─── Connected sources in right rail ────────────────────────────
+const SRC_LABELS = {gmail:'Gmail', spotify:'Spotify for Artists', youtube:'YouTube Studio', stripe:'Stripe', plaid:'Bank', csv:'CSV upload'};
+const ctxSources = document.getElementById('ctxSources');
+const connected = (profile.connected||[]).filter(id => SRC_LABELS[id]);
+if (connected.length) {
+  ctxSources.innerHTML = connected.map(id => `<div class="src-row"><span class="d"></span><span>${SRC_LABELS[id]}</span></div>`).join('');
+} else {
+  ctxSources.innerHTML = `<div style="color:var(--muted);font-size:13px">None yet.</div>`;
+}
+
+// ─── Thread state ───────────────────────────────────────────────
+const threadKey = 'mawd_thread';
+let thread = (() => {
+  try { return JSON.parse(localStorage.getItem(threadKey) || '[]'); }
+  catch(e){ return []; }
+})();
+
+function saveThread(){ localStorage.setItem(threadKey, JSON.stringify(thread.slice(-80))); }
+
+const threadInner = document.getElementById('threadInner');
+const threadEl = document.getElementById('thread');
+
+function renderThread(){
+  if (thread.length === 0) {
+    threadInner.innerHTML = renderEmptyState();
+    document.querySelectorAll('.sug').forEach(b => {
+      b.onclick = () => { document.getElementById('input').value = b.dataset.p; autosize(); document.getElementById('input').focus(); updateSend(); };
+    });
+    return;
+  }
+  threadInner.innerHTML = '';
+  thread.forEach(m => threadInner.appendChild(renderMsg(m)));
+  scrollToBottom();
+}
+
+function renderEmptyState(){
+  const goal = (profile.primary_goal||'').trim();
+  const name = profile.name || 'there';
+  const tt = profile.talent_type || 'creator';
+
+  const SUGS_BY_TYPE = {
+    artist: [
+      {k:'DOLLAR', p:'What did I earn last month, and what should I set aside for taxes?'},
+      {k:'PULSE',  p:'Which songs and markets are driving the most engagement right now?'},
+      {k:'SCOUT',  p:'Pull together a list of brand partners that fit my catalog.'},
+      {k:'COMPASS',p:'Map out a 90-day plan around my next release.'},
+    ],
+    actor: [
+      {k:'DOLLAR', p:'Summarize my income sources and upcoming tax obligations.'},
+      {k:'SCOUT',  p:'What brand deals or endorsements make sense for my audience?'},
+      {k:'HYPE',   p:'Draft a short announcement for my next project.'},
+      {k:'COMPASS',p:'Help me think through positioning for awards season.'},
+    ],
+    athlete: [
+      {k:'DOLLAR', p:'Break down my NIL and endorsement income this quarter.'},
+      {k:'SCOUT',  p:'Find three partnership categories I haven\'t tapped yet.'},
+      {k:'HYPE',   p:'Draft a post announcing my next event.'},
+      {k:'PULSE',  p:'What are my fans asking for most right now?'},
+    ],
+    creator: [
+      {k:'PULSE',  p:'What content is resonating most with my audience this month?'},
+      {k:'DOLLAR', p:'Show me my revenue by platform and what to focus on.'},
+      {k:'SCOUT',  p:'Pitch me three brand deal directions based on my channel.'},
+      {k:'COMPASS',p:'Plan a content calendar for the next four weeks.'},
+    ],
+    director: [
+      {k:'COMPASS',p:'Help me plan the rollout of my next short or feature.'},
+      {k:'SCOUT',  p:'Identify producers and studios that fit my current slate.'},
+      {k:'HYPE',   p:'Draft a festival submission blurb for my latest project.'},
+      {k:'DOLLAR', p:'Summarize my project expenses and what\'s still outstanding.'},
+    ],
+  };
+  const sugs = SUGS_BY_TYPE[tt] || SUGS_BY_TYPE.creator;
+  const greet = greeting();
+
+  return `
+    <div class="empty">
+      <h1>${greet}, ${escapeHtml(name)}. What should we work on?</h1>
+      <p>${goal ? 'You told me: ' + escapeHtml(goal) : 'Pick a starting point, or just ask.'}</p>
+      <div class="suggest">
+        ${sugs.map(s => `<button class="sug" data-p="${escapeAttr(s.p)}"><div class="sug-k">${s.k}</div>${escapeHtml(s.p)}</button>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function greeting(){
+  const h = new Date().getHours();
+  if (h < 5) return 'Late night';
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s){ return escapeHtml(s).replace(/\n/g,' '); }
+
+function renderMsg(m){
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + (m.role === 'user' ? 'user' : 'ai');
+  if (m.role !== 'user') {
+    const who = document.createElement('div');
+    who.className = 'who';
+    who.textContent = (m.agent && AGENTS.find(a=>a.id===m.agent)?.nm) || 'MAWD';
+    wrap.appendChild(who);
+  }
+  const b = document.createElement('div');
+  b.className = 'bubble';
+  if (m.role === 'user') b.textContent = m.content;
+  else b.innerHTML = renderMarkdown(m.content || '');
+  wrap.appendChild(b);
+  return wrap;
+}
+
+function renderMarkdown(text){
+  try {
+    return marked.parse(text, { breaks: true, gfm: true });
+  } catch(e){
+    return escapeHtml(text).replace(/\n/g,'<br>');
+  }
+}
+
+function scrollToBottom(force){
+  requestAnimationFrame(() => {
+    threadEl.scrollTop = threadEl.scrollHeight;
+  });
+}
+
+// ─── Send flow ──────────────────────────────────────────────────
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('send');
+const form = document.getElementById('composer');
+
+function autosize(){
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+}
+function updateSend(){
+  sendBtn.disabled = streaming || !input.value.trim();
+}
+
+input.addEventListener('input', () => { autosize(); updateSend(); });
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+});
+form.addEventListener('submit', e => { e.preventDefault(); send(); });
+
+async function send(){
+  const text = input.value.trim();
+  if (!text || streaming) return;
+  const userMsg = { role:'user', content:text };
+  thread.push(userMsg);
+  saveThread();
+  input.value = ''; autosize(); updateSend();
+  renderThread();
+
+  // Placeholder AI msg for streaming effect
+  const aiMsg = { role:'assistant', content:'', agent: activeAgent || undefined };
+  thread.push(aiMsg);
+  renderThread();
+  const aiEl = threadInner.lastElementChild;
+  const bubble = aiEl.querySelector('.bubble');
+  bubble.innerHTML = '<span class="caret"></span>';
+  streaming = true;
+  updateSend();
+  scrollToBottom();
+
+  try {
+    const apiMessages = thread
+      .filter((m,i,arr) => !(i === arr.length - 1 && m.role === 'assistant' && !m.content))
+      .map(m => ({ role: m.role, content: m.content }));
+
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        messages: apiMessages,
+        agent: activeAgent || undefined,
+        mawd: 'travis',
+        assistantName: 'MAWD',
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(()=> 'Unknown error');
+      throw new Error('Server ' + res.status + ': ' + errText.slice(0,200));
+    }
+
+    // Support both JSON and SSE
+    const ct = res.headers.get('content-type') || '';
+    let fullText = '';
+    let finalAgent = activeAgent || 'compass';
+
+    if (ct.includes('text/event-stream')) {
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, {stream:true});
+        const lines = buf.split('\n');
+        buf = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          const payload = line.slice(5).trim();
+          if (!payload || payload === '[DONE]') continue;
+          try {
+            const d = JSON.parse(payload);
+            const delta = d.delta || d.text || d.content || '';
+            if (delta) {
+              fullText += delta;
+              aiMsg.content = fullText;
+              aiMsg.agent = finalAgent;
+              bubble.innerHTML = renderMarkdown(fullText) + '<span class="caret"></span>';
+              scrollToBottom();
+            }
+            if (d.agent) finalAgent = d.agent;
+          } catch(e){}
+        }
+      }
+    } else {
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      fullText = data.reply || '';
+      finalAgent = data.agent || finalAgent;
+      // Fake-stream the text for premium feel
+      await fakeStream(fullText, bubble, (partial) => {
+        aiMsg.content = partial;
+        aiMsg.agent = finalAgent;
+        scrollToBottom();
+      });
+      if (data.pendingActions && data.pendingActions.length) {
+        lastAction = data.pendingActions[0].tool;
+      }
+    }
+
+    aiMsg.content = fullText;
+    aiMsg.agent = finalAgent;
+    bubble.innerHTML = renderMarkdown(fullText);
+    if (finalAgent && AGENTS.find(a=>a.id===finalAgent)) {
+      const who = aiEl.querySelector('.who');
+      if (who) who.textContent = AGENTS.find(a=>a.id===finalAgent).nm;
+      updateLastAction(finalAgent);
+    }
+    saveThread();
+  } catch(err){
+    aiMsg.content = 'Something went wrong reaching MAWD. ' + (err.message || '');
+    bubble.innerHTML = renderMarkdown(aiMsg.content);
+    saveThread();
+  } finally {
+    streaming = false;
+    updateSend();
+    scrollToBottom();
+  }
+}
+
+async function fakeStream(text, bubble, onPartial){
+  // Chunked typing for premium feel — word-wise
+  const words = text.split(/(\s+)/);
+  let out = '';
+  const total = words.length;
+  const step = total > 120 ? 3 : total > 60 ? 2 : 1;
+  for (let i=0; i<words.length; i+=step){
+    out += words.slice(i, i+step).join('');
+    bubble.innerHTML = renderMarkdown(out) + '<span class="caret"></span>';
+    if (onPartial) onPartial(out);
+    await new Promise(r => setTimeout(r, 14));
+  }
+}
+
+function updateLastAction(agentId){
+  const nm = (AGENTS.find(a=>a.id===agentId)?.nm) || 'MAWD';
+  document.getElementById('ctxLast').textContent = `${nm} replied at ${new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}.`;
+}
+
+// ─── New thread ─────────────────────────────────────────────────
+document.getElementById('newThread').onclick = () => {
+  if (streaming) return;
+  if (thread.length && !confirm('Start a new thread? Current conversation will be cleared.')) return;
+  thread = [];
+  saveThread();
+  renderThread();
+  toast('New thread');
+};
+
+// ─── Mobile drawer ──────────────────────────────────────────────
+function closeDrawer(){
+  const r = document.getElementById('rail');
+  const s = document.getElementById('scrim');
+  if (r) r.classList.remove('open');
+  if (s) s.classList.remove('open');
+}
+document.getElementById('hamb').onclick = () => {
+  document.getElementById('rail').classList.add('open');
+  document.getElementById('scrim').classList.add('open');
+};
+document.getElementById('scrim').onclick = closeDrawer;
+
+// ─── Toast ──────────────────────────────────────────────────────
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('on'), 1600);
+}
+
+// ─── Init ───────────────────────────────────────────────────────
+renderThread();
+autosize();
+updateSend();
+input.focus();
+</script>
+</body>
+</html>
